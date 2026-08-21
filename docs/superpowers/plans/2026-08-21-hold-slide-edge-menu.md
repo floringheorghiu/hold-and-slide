@@ -387,7 +387,6 @@ import Animated, { useAnimatedProps, SharedValue } from 'react-native-reanimated
 import { StyleSheet, TextInput } from 'react-native';
 import { phaseName } from '../lib/phase';
 
-Animated.addWhitelistedNativeProp({ text: true });
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 type Props = {
@@ -397,9 +396,10 @@ type Props = {
 };
 
 export function DebugOverlay({ phase, revealX, focusedIndex }: Props) {
-  const props = useAnimatedProps(() => ({
-    text: `${phaseName(phase.value)}  x=${Math.round(revealX.value)}  i=${focusedIndex.value}`,
-  }));
+  const props = useAnimatedProps(() => {
+    const text = `${phaseName(phase.value)}  x=${Math.round(revealX.value)}  i=${focusedIndex.value}`;
+    return { text, defaultValue: text };
+  });
 
   return (
     <AnimatedTextInput
@@ -407,7 +407,6 @@ export function DebugOverlay({ phase, revealX, focusedIndex }: Props) {
       editable={false}
       underlineColorAndroid="transparent"
       animatedProps={props as never}
-      defaultValue="IDLE  x=0  i=-1"
     />
   );
 }
@@ -426,6 +425,15 @@ const styles = StyleSheet.create({
 ```
 
 This uses an uneditable `TextInput` rather than `Text` deliberately. `text` is an animatable native prop on `TextInput`, so the readout updates entirely on the UI thread. A `Text` component would need `runOnJS` on every frame, which is the exact pattern this POC exists to avoid.
+
+Two details are load-bearing. Both are copied from Reanimated's own
+`PerformanceMonitor` component, which uses this identical technique at 4.1.7:
+
+- No whitelisting call. `addWhitelistedNativeProps` is deprecated and a documented
+  no-op in Reanimated 4, and the older singular `addWhitelistedNativeProp` never
+  existed on this major version.
+- `useAnimatedProps` must return both `text` and `defaultValue`, set to the same
+  string. Returning `text` alone does not render reliably.
 
 - [ ] **Step 7: Mount the skeleton**
 
