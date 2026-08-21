@@ -1,7 +1,6 @@
 import Animated, {
   SharedValue,
   useAnimatedStyle,
-  withTiming,
 } from 'react-native-reanimated';
 import { StyleSheet, Text } from 'react-native';
 
@@ -15,9 +14,8 @@ export function GestureToken({ text, index, activeIndex }: Props) {
   const style = useAnimatedStyle(() => {
     const active = activeIndex.value === index;
     return {
-      backgroundColor: withTiming(active ? '#3b4260' : 'transparent', {
-        duration: 120,
-      }),
+      backgroundColor: active ? '#5b6699' : 'transparent',
+      transform: [{ scale: active ? 1.15 : 1 }],
     };
   });
 

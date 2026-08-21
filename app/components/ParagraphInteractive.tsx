@@ -52,7 +52,7 @@ export function ParagraphInteractive() {
 
   return (
     <View style={styles.wrap}>
-      <DebugOverlay phase={phase} revealX={revealX} focusedIndex={focusedIndex} />
+      <DebugOverlay phase={phase} revealX={revealX} focusedIndex={focusedIndex} activeIndex={activeIndex} />
       <View style={styles.paragraph}>
         {TOKENS.map((t, i) => (
           <Token

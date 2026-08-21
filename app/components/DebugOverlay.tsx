@@ -8,11 +8,12 @@ type Props = {
   phase: SharedValue<number>;
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
+  activeIndex: SharedValue<number>;
 };
 
-export function DebugOverlay({ phase, revealX, focusedIndex }: Props) {
+export function DebugOverlay({ phase, revealX, focusedIndex, activeIndex }: Props) {
   const props = useAnimatedProps(() => {
-    const text = `${phaseName(phase.value)}  x=${Math.round(revealX.value)}  i=${focusedIndex.value}`;
+    const text = `${phaseName(phase.value)} x=${Math.round(revealX.value)} i=${focusedIndex.value} a=${activeIndex.value}`;
     return { text, defaultValue: text };
   });
 
