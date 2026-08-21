@@ -18,6 +18,11 @@
 - Install dependencies with `npx expo install`, never `npm install`. Expo Go ships
   fixed native binaries. Only the pinned versions load.
 - Import `runOnJS` from `react-native-worklets`. Import `useSharedValue`, `useAnimatedStyle`, `useDerivedValue`, and `withTiming` from `react-native-reanimated`.
+- Never wrap a colour string in `withTiming`. It silently renders nothing in
+  Reanimated 4.1.7 — no error, no warning, no colour. Animate colours by driving a
+  numeric `progress` shared value with `withTiming`, then feeding it to
+  `interpolateColor`. Confirmed on device: the token highlight failed exactly this
+  way and cost a debugging cycle.
 - Never call `runOnJS` on every `onUpdate` frame. Call it only when a discrete value changes. Breaking this invalidates the POC.
 - Icon geometry crosses threads. It must live in a shared value. A plain JavaScript array is captured by closure when the worklet is created, so the worklet would read stale coordinates.
 - Keep `pan`'s `if (!armed.value) return;` guard. Gesture-handler recognizers cannot hand off mid-touch, so `pan` receives updates from touch-down.
@@ -518,10 +523,15 @@ Create `app/components/GestureToken.tsx`:
 ```tsx
 import Animated, {
   SharedValue,
+  interpolateColor,
   useAnimatedStyle,
+  useDerivedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { StyleSheet, Text } from 'react-native';
+
+const PAGE_BG = '#11131a';
+const HIGHLIGHT_BG = '#5b6699';
 
 type Props = {
   text: string;
@@ -530,14 +540,18 @@ type Props = {
 };
 
 export function GestureToken({ text, index, activeIndex }: Props) {
-  const style = useAnimatedStyle(() => {
-    const active = activeIndex.value === index;
-    return {
-      backgroundColor: withTiming(active ? '#3b4260' : 'transparent', {
-        duration: 120,
-      }),
-    };
-  });
+  const progress = useDerivedValue(() =>
+    withTiming(activeIndex.value === index ? 1 : 0, { duration: 120 }),
+  );
+
+  const style = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [PAGE_BG, HIGHLIGHT_BG],
+    ),
+    transform: [{ scale: 1 + progress.value * 0.08 }],
+  }));
 
   return (
     <Animated.View style={[styles.token, style]}>
@@ -554,7 +568,16 @@ const styles = StyleSheet.create({
 });
 ```
 
-`selectable={false}` keeps the platform's own text selection out of the way. The POC drives highlighting itself.
+`selectable={false}` keeps the platform's own text selection out of the way. The POC
+drives highlighting itself.
+
+`PAGE_BG` must match the root background in `App.tsx`. Interpolating from the page
+colour rather than from `'transparent'` avoids Reanimated's transparent-black
+endpoint, which darkens the midpoint of the fade.
+
+The 8 percent scale is deliberate. At M3 the human must track which word he grabbed
+while simultaneously watching the icon menu, and a size change is readable in
+peripheral vision where a colour change is not.
 
 The highlight is driven by `activeIndex`, a shared value. No React state is involved, so a token highlighting does not re-render the paragraph.
 

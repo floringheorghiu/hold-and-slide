@@ -1,8 +1,14 @@
 import Animated, {
   SharedValue,
+  interpolateColor,
   useAnimatedStyle,
+  useDerivedValue,
+  withTiming,
 } from 'react-native-reanimated';
 import { StyleSheet, Text } from 'react-native';
+
+const PAGE_BG = '#11131a';
+const HIGHLIGHT_BG = '#5b6699';
 
 type Props = {
   text: string;
@@ -11,13 +17,18 @@ type Props = {
 };
 
 export function GestureToken({ text, index, activeIndex }: Props) {
-  const style = useAnimatedStyle(() => {
-    const active = activeIndex.value === index;
-    return {
-      backgroundColor: active ? '#5b6699' : 'transparent',
-      transform: [{ scale: active ? 1.15 : 1 }],
-    };
-  });
+  const progress = useDerivedValue(() =>
+    withTiming(activeIndex.value === index ? 1 : 0, { duration: 120 }),
+  );
+
+  const style = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [PAGE_BG, HIGHLIGHT_BG],
+    ),
+    transform: [{ scale: 1 + progress.value * 0.08 }],
+  }));
 
   return (
     <Animated.View style={[styles.token, style]}>
