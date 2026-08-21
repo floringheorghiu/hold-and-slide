@@ -601,36 +601,80 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2a: Extend the hook to accept activeIndex**
+- [ ] **Step 2a: Move shared-value ownership out of the hook**
 
-Modify `app/hooks/useHoldSlideGesture.ts`. Change the signature and set `activeIndex` when the press arms.
+The hook currently creates `phase`, `revealX`, and `focusedIndex` itself. That was
+correct when one gesture existed. It is wrong now: every token needs its own
+gesture instance, but they must all read and write ONE set of shared values.
+Otherwise each token gets a private state machine and the menu cannot know which
+token opened it.
 
-```ts
-type Args = { activeIndex: SharedValue<number> };
-
-export function useHoldSlideGesture({ activeIndex }: Args) {
-```
-
-Add to `reset()`:
+Change `useHoldSlideGesture` to receive them instead of creating them:
 
 ```ts
-    activeIndex.value = -1;
+import type { SharedValue } from 'react-native-reanimated';
+
+type Args = {
+  tokenIndex: number;
+  activeIndex: SharedValue<number>;
+  phase: SharedValue<number>;
+  revealX: SharedValue<number>;
+  focusedIndex: SharedValue<number>;
+};
+
+export function useHoldSlideGesture({
+  tokenIndex,
+  activeIndex,
+  phase,
+  revealX,
+  focusedIndex,
+}: Args) {
 ```
 
-The token index is not known inside the shared hook because one gesture instance is shared by every token. Resolve it in M2 Step 2b.
+Delete the four `useSharedValue` lines for `phase`, `revealX`, and `focusedIndex`
+from the hook body. Keep `armed` created locally — it is per-gesture by nature,
+since only one token can be armed at a time and each recognizer needs its own.
+
+Add `activeIndex.value = tokenIndex;` inside `longPress.onStart`, beside the
+existing `armed` and `phase` assignments.
+
+Add `activeIndex.value = -1;` inside `reset()`.
+
+Return only the gesture:
+
+```ts
+  return { gesture };
+```
 
 - [ ] **Step 2b: Give each token its own gesture instance**
 
-A single gesture cannot know which token was pressed. Change `ParagraphInteractive` to call the hook per token by extracting a small wrapper component:
+A hook cannot be called from a callback or a loop body, so the per-token hook call
+needs its own component. Add this to `ParagraphInteractive.tsx`:
 
 ```tsx
-function Token({ text, index, activeIndex, onGesture }: {
+function Token({
+  text,
+  index,
+  activeIndex,
+  phase,
+  revealX,
+  focusedIndex,
+}: {
   text: string;
   index: number;
   activeIndex: SharedValue<number>;
-  onGesture: (index: number) => ReturnType<typeof useHoldSlideGesture>;
+  phase: SharedValue<number>;
+  revealX: SharedValue<number>;
+  focusedIndex: SharedValue<number>;
 }) {
-  const { gesture } = onGesture(index);
+  const { gesture } = useHoldSlideGesture({
+    tokenIndex: index,
+    activeIndex,
+    phase,
+    revealX,
+    focusedIndex,
+  });
+
   return (
     <GestureDetector gesture={gesture}>
       <View>
@@ -641,21 +685,10 @@ function Token({ text, index, activeIndex, onGesture }: {
 }
 ```
 
-Hooks cannot be called from a callback. Instead, give `useHoldSlideGesture` a `tokenIndex` argument and call the hook once inside `Token`:
-
-```ts
-export function useHoldSlideGesture({ activeIndex, tokenIndex }: Args) {
-```
-
-and in `longPress.onStart`:
-
-```ts
-      activeIndex.value = tokenIndex;
-```
-
-`Token` then calls `useHoldSlideGesture({ activeIndex, tokenIndex: index })` directly. Remove the `onGesture` prop.
-
-The shared values `activeIndex`, `phase`, `revealX`, and `focusedIndex` must be created once in `ParagraphInteractive` and passed down, not created per token. Only one token can be active at a time, which matches the MVP scope of one menu.
+`ParagraphInteractive` creates the four shared values once with `useSharedValue`,
+renders `<DebugOverlay />` with three of them, and maps `TOKENS` to `<Token />`,
+passing all four down. Remove the `onGesture` prop idea entirely — it does not
+exist in this design.
 
 - [ ] **Step 3: Update App.tsx**
 

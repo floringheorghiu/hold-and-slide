@@ -1,5 +1,6 @@
 import { Gesture } from 'react-native-gesture-handler';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
+import type { SharedValue } from 'react-native-reanimated';
 import { Phase } from '../lib/phase';
 import {
   LONG_PRESS_MS,
@@ -9,16 +10,28 @@ import {
   MAX_DRAG,
 } from '../lib/constants';
 
-export function useHoldSlideGesture() {
+type Args = {
+  tokenIndex: number;
+  activeIndex: SharedValue<number>;
+  phase: SharedValue<number>;
+  revealX: SharedValue<number>;
+  focusedIndex: SharedValue<number>;
+};
+
+export function useHoldSlideGesture({
+  tokenIndex,
+  activeIndex,
+  phase,
+  revealX,
+  focusedIndex,
+}: Args) {
   const armed = useSharedValue(false);
-  const phase = useSharedValue<number>(Phase.IDLE);
-  const revealX = useSharedValue(0);
-  const focusedIndex = useSharedValue(-1);
 
   function reset() {
     'worklet';
     armed.value = false;
     phase.value = Phase.IDLE;
+    activeIndex.value = -1;
     focusedIndex.value = -1;
     revealX.value = withTiming(0, { duration: 180 });
   }
@@ -32,6 +45,7 @@ export function useHoldSlideGesture() {
     .onStart(() => {
       armed.value = true;
       phase.value = Phase.ARMED;
+      activeIndex.value = tokenIndex;
     });
 
   const pan = Gesture.Pan()
@@ -62,5 +76,5 @@ export function useHoldSlideGesture() {
 
   const gesture = Gesture.Simultaneous(longPress, pan);
 
-  return { gesture, phase, revealX, focusedIndex };
+  return { gesture };
 }
