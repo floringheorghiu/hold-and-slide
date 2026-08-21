@@ -23,17 +23,25 @@ updated via `runOnJS` only on discrete transitions; numeric Phase enum;
 
 Three deltas:
 
-### D1 — Reanimated 4, not 3
+### D1 — Expo SDK 54, and Reanimated 4 rather than 3
 
-Expo SDK 57 (`bundledNativeModules.json`) pins:
+The SDK is chosen by the test device, not by us. Expo Go supports exactly
+one SDK version. The human's iPhone runs Expo Go 54.0.2 and the App Store
+offers no update, so his iOS version caps him there. The project targets
+whatever his phone can run.
+
+Expo SDK 54 (`bundledNativeModules.json`) pins:
 
 | Package | Version |
 |---|---|
-| react-native | 0.86.2 |
-| react-native-reanimated | 4.5.1 |
-| react-native-worklets | 0.10.1 |
-| react-native-gesture-handler | ~2.32.0 |
-| expo-haptics | ~57.0.1 |
+| react-native | 0.81.5 |
+| react-native-reanimated | ~4.1.1 |
+| react-native-worklets | 0.5.1 |
+| react-native-gesture-handler | ~2.28.0 |
+| expo-haptics | ~15.0.8 |
+
+SDK 54 still ships Reanimated 4 with the separate worklets package, so the
+spec's v3 pin is still the one real delta. The architecture is unaffected.
 
 Expo Go ships fixed native binaries, so these are the only loadable
 versions. Reanimated 3 is unavailable without abandoning Expo Go, which

@@ -6,13 +6,17 @@
 
 **Architecture:** Gesture state lives in Reanimated shared values and is evaluated inside worklets on the UI thread. React state is a mirror, updated through `runOnJS` only on discrete transitions, never per frame. Pure math (phase helpers, clamping, hit-testing) lives in modules that import nothing from React Native, so Jest can test it directly.
 
-**Tech Stack:** Expo SDK 57 (managed, TypeScript), React Native 0.86.2, Reanimated 4.5.1, react-native-worklets 0.10.1, react-native-gesture-handler 2.32.0, expo-haptics 57.0.1. Runs in Expo Go.
+**Tech Stack:** Expo SDK 54 (managed, TypeScript), React Native 0.81.5, Reanimated 4.1.1, react-native-worklets 0.5.1, react-native-gesture-handler 2.28.0, expo-haptics 15.0.8. Runs in Expo Go.
 
 **Spec:** `docs/superpowers/specs/2026-08-21-hold-slide-edge-menu-design.md`, which reconciles the source spec `Cross-platform_app_prototype.md`.
 
 ## Global Constraints
 
-- Install dependencies with `npx expo install`, never `npm install`. Expo Go ships fixed native binaries. Only the pinned versions load.
+- Target Expo SDK 54. The SDK is dictated by the test device: Expo Go supports
+  exactly one SDK, and the human's iPhone caps at Expo Go 54.0.2. Do not upgrade
+  the SDK without a new device check.
+- Install dependencies with `npx expo install`, never `npm install`. Expo Go ships
+  fixed native binaries. Only the pinned versions load.
 - Import `runOnJS` from `react-native-worklets`. Import `useSharedValue`, `useAnimatedStyle`, `useDerivedValue`, and `withTiming` from `react-native-reanimated`.
 - Never call `runOnJS` on every `onUpdate` frame. Call it only when a discrete value changes. Breaking this invalidates the POC.
 - Icon geometry crosses threads. It must live in a shared value. A plain JavaScript array is captured by closure when the worklet is created, so the worklet would read stale coordinates.
@@ -96,7 +100,7 @@ avoids that failure. Found during M0 execution.
 node -e "const p=require('./package.json').dependencies; console.log(p)"
 ```
 
-Expected: `react-native-reanimated` 4.5.x, `react-native-worklets` 0.10.x, `react-native-gesture-handler` 2.32.x, `expo-haptics` 57.0.x. Stop and report if any differ.
+Expected: `react-native-reanimated` 4.1.x, `react-native-worklets` 0.5.x, `react-native-gesture-handler` 2.28.x, `expo-haptics` 15.0.x. Stop and report if any differ.
 
 - [ ] **Step 5: Add the Reanimated babel plugin**
 
