@@ -1,14 +1,21 @@
 import { Gesture } from 'react-native-gesture-handler';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-worklets';
 import { Phase } from '../lib/phase';
+import { hitTest, clamp, IconBounds } from '../lib/geometry';
 import {
   LONG_PRESS_MS,
   LONG_PRESS_MAX_DISTANCE,
   MENU_WIDTH,
   REVEAL_THRESHOLD,
   MAX_DRAG,
+  HIT_PADDING,
 } from '../lib/constants';
+
+function commitAction(index: number) {
+  console.log('[commit] icon', index);
+}
 
 type Args = {
   tokenIndex: number;
@@ -16,6 +23,7 @@ type Args = {
   phase: SharedValue<number>;
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
+  iconBounds: SharedValue<IconBounds[]>;
 };
 
 export function useHoldSlideGesture({
@@ -24,6 +32,7 @@ export function useHoldSlideGesture({
   phase,
   revealX,
   focusedIndex,
+  iconBounds,
 }: Args) {
   const armed = useSharedValue(false);
 
@@ -63,11 +72,23 @@ export function useHoldSlideGesture({
         return;
       }
 
-      revealX.value = Math.min(Math.max(dragged, 0), MENU_WIDTH);
-      phase.value =
-        revealX.value > REVEAL_THRESHOLD ? Phase.MENU_OPEN : Phase.DRAGGING;
+      revealX.value = clamp(dragged, 0, MENU_WIDTH);
+
+      if (revealX.value > REVEAL_THRESHOLD) {
+        const idx = hitTest(e.absoluteY, iconBounds.value, HIT_PADDING);
+        if (idx !== focusedIndex.value) {
+          focusedIndex.value = idx;
+        }
+        phase.value = Phase.SCRUBBING;
+      } else {
+        focusedIndex.value = -1;
+        phase.value = Phase.DRAGGING;
+      }
     })
     .onEnd(() => {
+      if (phase.value === Phase.SCRUBBING && focusedIndex.value >= 0) {
+        runOnJS(commitAction)(focusedIndex.value);
+      }
       reset();
     })
     .onFinalize(() => {

@@ -818,8 +818,10 @@ describe('hitTest', () => {
   });
 
   it('picks the nearest centre when padded zones overlap', () => {
-    expect(hitTest(131, BOUNDS, 40)).toBe(0);
-    expect(hitTest(135, BOUNDS, 40)).toBe(1);
+    // Centres 100 and 160 -> midpoint 130. Padding 40 makes both zones reach y=130,
+    // so this asserts the tie is broken by distance, not by array order.
+    expect(hitTest(129, BOUNDS, 40)).toBe(0);
+    expect(hitTest(131, BOUNDS, 40)).toBe(1);
   });
 });
 ```
@@ -909,31 +911,30 @@ export function EdgeMenu({ revealX, focusedIndex, onBounds }: Props) {
     opacity: revealX.value / MENU_WIDTH,
   }));
 
-  function measure(index: number) {
-    return (e: LayoutChangeEvent) => {
-      const { y, height } = e.nativeEvent.layout;
-      collected.current[index] = { centerY: y + height / 2, halfHeight: height / 2 };
-      if (collected.current.filter(Boolean).length === ICONS.length) {
-        onBounds([...collected.current]);
-      }
-    };
+  function report(index: number, b: IconBounds) {
+    collected.current[index] = b;
+    if (collected.current.filter(Boolean).length === ICONS.length) {
+      onBounds([...collected.current]);
+    }
   }
 
   return (
     <Animated.View style={[styles.panel, panelStyle]} pointerEvents="none">
       {ICONS.map((glyph, i) => (
-        <Icon key={i} glyph={glyph} index={i} focusedIndex={focusedIndex} onLayout={measure(i)} />
+        <Icon key={i} glyph={glyph} index={i} focusedIndex={focusedIndex} onMeasured={report} />
       ))}
     </Animated.View>
   );
 }
 
-function Icon({ glyph, index, focusedIndex, onLayout }: {
+function Icon({ glyph, index, focusedIndex, onMeasured }: {
   glyph: string;
   index: number;
   focusedIndex: SharedValue<number>;
-  onLayout: (e: LayoutChangeEvent) => void;
+  onMeasured: (index: number, b: IconBounds) => void;
 }) {
+  const ref = useRef<View>(null);
+
   const style = useAnimatedStyle(() => {
     const focused = focusedIndex.value === index;
     return {
@@ -942,8 +943,14 @@ function Icon({ glyph, index, focusedIndex, onLayout }: {
     };
   });
 
+  function handleLayout() {
+    ref.current?.measureInWindow((_x, y, _w, h) => {
+      onMeasured(index, { centerY: y + h / 2, halfHeight: h / 2 });
+    });
+  }
+
   return (
-    <Animated.View style={[styles.icon, style]} onLayout={onLayout}>
+    <Animated.View ref={ref} style={[styles.icon, style]} onLayout={handleLayout}>
       <Text style={styles.glyph}>{glyph}</Text>
     </Animated.View>
   );

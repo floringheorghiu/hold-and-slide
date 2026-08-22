@@ -3,9 +3,11 @@ import { useSharedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { StyleSheet, View } from 'react-native';
 import { GestureToken } from './GestureToken';
+import { EdgeMenu } from './EdgeMenu';
 import { useHoldSlideGesture } from '../hooks/useHoldSlideGesture';
 import { DebugOverlay } from './DebugOverlay';
 import { Phase } from '../lib/phase';
+import type { IconBounds } from '../lib/geometry';
 
 const PARAGRAPH =
   'Hold any word in this paragraph, then slide left to reveal the menu and scrub through the icons.';
@@ -19,6 +21,7 @@ function Token({
   phase,
   revealX,
   focusedIndex,
+  iconBounds,
 }: {
   text: string;
   index: number;
@@ -26,6 +29,7 @@ function Token({
   phase: SharedValue<number>;
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
+  iconBounds: SharedValue<IconBounds[]>;
 }) {
   const { gesture } = useHoldSlideGesture({
     tokenIndex: index,
@@ -33,6 +37,7 @@ function Token({
     phase,
     revealX,
     focusedIndex,
+    iconBounds,
   });
 
   return (
@@ -49,6 +54,7 @@ export function ParagraphInteractive() {
   const phase = useSharedValue<number>(Phase.IDLE);
   const revealX = useSharedValue(0);
   const focusedIndex = useSharedValue(-1);
+  const iconBounds = useSharedValue<IconBounds[]>([]);
 
   return (
     <View style={styles.wrap}>
@@ -63,9 +69,15 @@ export function ParagraphInteractive() {
             phase={phase}
             revealX={revealX}
             focusedIndex={focusedIndex}
+            iconBounds={iconBounds}
           />
         ))}
       </View>
+      <EdgeMenu
+        revealX={revealX}
+        focusedIndex={focusedIndex}
+        onBounds={(b) => { iconBounds.value = b; }}
+      />
     </View>
   );
 }
