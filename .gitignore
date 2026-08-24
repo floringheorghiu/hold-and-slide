@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Screen recordings from device testing (kept locally, not tracked)
+*.mov
+*.mp4
