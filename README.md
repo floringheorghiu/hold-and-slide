@@ -161,3 +161,7 @@ docs/           design specs and findings
 `app/lib` holds no React Native imports, which is what makes it unit
 testable. Everything with a right answer is tested there; everything else is
 validated on hardware.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
