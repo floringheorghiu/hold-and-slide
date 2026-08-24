@@ -5,10 +5,11 @@ import Animated, {
   useDerivedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 
-const PAGE_BG = '#11131a';
-const HIGHLIGHT_BG = '#5b6699';
+// Must stay in sync with the root background colour in App.tsx.
+const PAGE_BG = '#FAF9F7';
+const HIGHLIGHT_BG = '#CFE0FF';
 
 type Props = {
   text: string;
@@ -41,5 +42,10 @@ export function GestureToken({ text, index, activeIndex }: Props) {
 
 const styles = StyleSheet.create({
   token: { borderRadius: 4, paddingHorizontal: 2 },
-  text: { color: '#e6e8ef', fontSize: 18, lineHeight: 28 },
+  text: {
+    color: '#1F1E1D',
+    fontSize: 18,
+    lineHeight: 30,
+    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' }),
+  },
 });

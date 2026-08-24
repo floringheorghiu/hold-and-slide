@@ -1,21 +1,26 @@
 import { GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { useSharedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
-import { DebugOverlay } from './DebugOverlay';
+import { ReadingHeader } from './ReadingHeader';
+import { ActionRow } from './ActionRow';
+import { ReplyBar } from './ReplyBar';
 import { useHoldSlideGesture } from '../hooks/useHoldSlideGesture';
 import { Phase } from '../lib/phase';
 import type { IconBounds } from '../lib/geometry';
+import { ARTICLE, ARTICLE_TITLE } from '../content/article';
 
-const PARAGRAPH =
-  'Hold any word in this paragraph, then slide left to reveal the menu and scrub through the icons.';
+// Paragraphs split on blank lines. Every token keeps a unique index across
+// the WHOLE article, not per paragraph, because the gesture and the future
+// sentence lookup both depend on a single global index space.
+const PARAGRAPHS = ARTICLE.split(/\n\n+/);
 
-// Spike only: repeated so the content is clearly taller than the screen,
-// to test the pan gesture against a scrolling view.
-const REPEAT_COUNT = 8;
-const TOKENS = Array.from({ length: REPEAT_COUNT }, () => PARAGRAPH.split(' ')).flat();
+let nextIndex = 0;
+const PARAGRAPH_TOKENS = PARAGRAPHS.map((paragraph) =>
+  paragraph.split(' ').map((text) => ({ text, index: nextIndex++ })),
+);
 
 function Token({
   text,
@@ -61,34 +66,57 @@ export function ParagraphInteractive() {
 
   return (
     <View style={styles.wrap}>
-      <DebugOverlay phase={phase} revealX={revealX} focusedIndex={focusedIndex} activeIndex={activeIndex} />
+      <ReadingHeader />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.paragraph}>
-          {TOKENS.map((t, i) => (
-            <Token
-              key={i}
-              text={t}
-              index={i}
-              activeIndex={activeIndex}
-              phase={phase}
-              revealX={revealX}
-              focusedIndex={focusedIndex}
-              iconBounds={iconBounds}
-            />
-          ))}
-        </View>
+        <Text style={styles.title}>{ARTICLE_TITLE}</Text>
+        {PARAGRAPH_TOKENS.map((tokens, pIndex) => (
+          <View key={pIndex} style={styles.paragraph}>
+            {tokens.map(({ text, index }) => (
+              <Token
+                key={index}
+                text={text}
+                index={index}
+                activeIndex={activeIndex}
+                phase={phase}
+                revealX={revealX}
+                focusedIndex={focusedIndex}
+                iconBounds={iconBounds}
+              />
+            ))}
+          </View>
+        ))}
+        <ActionRow />
+        <Text style={styles.disclaimer}>
+          Claude is AI and can make mistakes. Please double-check responses.
+        </Text>
       </ScrollView>
       <EdgeMenu
         revealX={revealX}
         focusedIndex={focusedIndex}
         onBounds={(b) => { iconBounds.value = b; }}
       />
+      <ReplyBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1 },
-  scrollContent: { paddingTop: 80 },
-  paragraph: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 24 },
+  wrap: { flex: 1, backgroundColor: '#FAF9F7' },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 12 },
+  title: {
+    color: '#1F1E1D',
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '600',
+    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' }),
+    marginBottom: 20,
+  },
+  paragraph: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 },
+  disclaimer: {
+    color: '#8A8680',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 16,
+    marginBottom: 24,
+  },
 });
