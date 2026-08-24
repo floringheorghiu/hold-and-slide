@@ -11,7 +11,14 @@ export function useSpeech(fullText: string) {
   // Guards against expo-speech's Android quirk: Speech.stop() can itself
   // trigger onDone rather than onStopped. Without this, pausing would
   // immediately start speaking the next sentence — the opposite of pausing.
-  const cancelled = useRef(false);
+  //
+  // A generation counter rather than a boolean, because Speech.stop() is async.
+  // A boolean cleared by the next utterance cannot tell "cancelled" apart from
+  // "cancelled, then restarted", so a late callback from the stopped utterance
+  // would pass the guard and advance the cursor past the sentence just started.
+  // Every utterance captures its generation; a callback whose generation is
+  // stale is ignored no matter when it arrives.
+  const generation = useRef(0);
 
   const speakFrom = useCallback(
     (index: number) => {
@@ -22,16 +29,16 @@ export function useSpeech(fullText: string) {
       }
 
       cursor.current = index;
-      cancelled.current = false;
+      const myGeneration = ++generation.current;
       setState('playing');
 
       Speech.speak(sentences[index].text, {
         onDone: () => {
-          if (cancelled.current) return;
+          if (myGeneration !== generation.current) return;
           speakFrom(cursor.current + 1);
         },
         onError: () => {
-          if (cancelled.current) return;
+          if (myGeneration !== generation.current) return;
           setState('idle');
         },
       });
@@ -41,7 +48,7 @@ export function useSpeech(fullText: string) {
 
   const play = useCallback(
     (fromIndex: number = 0) => {
-      cancelled.current = true;
+      generation.current++;
       Speech.stop();
       speakFrom(fromIndex);
     },
@@ -49,7 +56,7 @@ export function useSpeech(fullText: string) {
   );
 
   const pause = useCallback(() => {
-    cancelled.current = true;
+    generation.current++;
     Speech.stop();
     setState('paused');
   }, []);
@@ -59,7 +66,7 @@ export function useSpeech(fullText: string) {
   }, [speakFrom]);
 
   const stop = useCallback(() => {
-    cancelled.current = true;
+    generation.current++;
     Speech.stop();
     cursor.current = 0;
     setState('idle');
@@ -76,7 +83,7 @@ export function useSpeech(fullText: string) {
 
   useEffect(() => {
     return () => {
-      cancelled.current = true;
+      generation.current++;
       Speech.stop();
     };
   }, []);
