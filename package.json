@@ -7,7 +7,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@types/jest": "29.5.14",
     "babel-preset-expo": "~54.0.10",
-    "expo": "^54.0.37",
+    "expo": "^57.0.16",
     "expo-audio": "~1.1.1",
     "expo-clipboard": "~8.0.8",
     "expo-haptics": "~15.0.8",
