@@ -8,7 +8,7 @@ import { triggerHaptic } from '../lib/haptics';
 import {
   LONG_PRESS_MS,
   LONG_PRESS_MAX_DISTANCE,
-  MENU_WIDTH,
+  REVEAL_DISTANCE,
   REVEAL_THRESHOLD,
   MAX_DRAG,
   HIT_PADDING,
@@ -76,7 +76,7 @@ export function useHoldSlideGesture({
         return;
       }
 
-      revealX.value = clamp(dragged, 0, MENU_WIDTH);
+      revealX.value = clamp(dragged, 0, REVEAL_DISTANCE);
 
       if (revealX.value > REVEAL_THRESHOLD) {
         if (!hasRevealed.value) {

@@ -4,7 +4,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { useRef } from 'react';
-import { MENU_WIDTH } from '../lib/constants';
+import { MENU_WIDTH, REVEAL_DISTANCE } from '../lib/constants';
 import type { IconBounds } from '../lib/geometry';
 
 const ICONS = ['★', '✎', '⌫'];
@@ -18,10 +18,13 @@ type Props = {
 export function EdgeMenu({ revealX, focusedIndex, onBounds }: Props) {
   const collected = useRef<IconBounds[]>([]);
 
-  const panelStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: MENU_WIDTH - revealX.value }],
-    opacity: revealX.value / MENU_WIDTH,
-  }));
+  const panelStyle = useAnimatedStyle(() => {
+    const t = revealX.value / REVEAL_DISTANCE;
+    return {
+      transform: [{ translateX: MENU_WIDTH * (1 - t) }],
+      opacity: t,
+    };
+  });
 
   function report(index: number, b: IconBounds) {
     collected.current[index] = b;
