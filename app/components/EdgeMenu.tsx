@@ -54,7 +54,7 @@ function Icon({ glyph, index, focusedIndex, onMeasured }: {
     const focused = focusedIndex.value === index;
     return {
       transform: [{ scale: focused ? 1.25 : 1 }],
-      backgroundColor: focused ? '#3b4260' : '#232735',
+      backgroundColor: focused ? '#CFE0FF' : '#F0EEEA',
     };
   });
 
@@ -73,6 +73,11 @@ function Icon({ glyph, index, focusedIndex, onMeasured }: {
 
 const styles = StyleSheet.create({
   panel: {
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E2DD',
     position: 'absolute',
     right: 0,
     top: 0,
@@ -90,5 +95,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: { color: '#e6e8ef', fontSize: 22 },
+  glyph: { color: '#1F1E1D', fontSize: 22 },
 });
