@@ -997,11 +997,11 @@ Add a shared value:
   const iconBounds = useSharedValue<IconBounds[]>([]);
 ```
 
-Return it so `ParagraphInteractive` can write to it:
-
-```ts
-  return { gesture, phase, revealX, focusedIndex, iconBounds };
-```
+Do NOT create `iconBounds` inside the hook. Since M2 the hook receives its shared
+values as arguments and returns only `{ gesture }`. Add `iconBounds` to the `Args`
+type as `SharedValue<IconBounds[]>`, create it once in `ParagraphInteractive` with
+`useSharedValue<IconBounds[]>([])`, and pass it down through `Token` alongside the
+other four. Step 8 below does the wiring.
 
 `iconBounds` is a shared value, not a plain array. A plain array would be captured by closure when the worklet is built, and every later `onLayout` write would be invisible to the gesture.
 

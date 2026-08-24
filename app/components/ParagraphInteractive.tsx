@@ -5,7 +5,6 @@ import { StyleSheet, View } from 'react-native';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
 import { useHoldSlideGesture } from '../hooks/useHoldSlideGesture';
-import { DebugOverlay } from './DebugOverlay';
 import { Phase } from '../lib/phase';
 import type { IconBounds } from '../lib/geometry';
 
@@ -58,7 +57,6 @@ export function ParagraphInteractive() {
 
   return (
     <View style={styles.wrap}>
-      <DebugOverlay phase={phase} revealX={revealX} focusedIndex={focusedIndex} activeIndex={activeIndex} />
       <View style={styles.paragraph}>
         {TOKENS.map((t, i) => (
           <Token

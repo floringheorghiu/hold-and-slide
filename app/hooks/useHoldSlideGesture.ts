@@ -4,6 +4,7 @@ import type { SharedValue } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-worklets';
 import { Phase } from '../lib/phase';
 import { hitTest, clamp, IconBounds } from '../lib/geometry';
+import { triggerHaptic } from '../lib/haptics';
 import {
   LONG_PRESS_MS,
   LONG_PRESS_MAX_DISTANCE,
@@ -35,6 +36,7 @@ export function useHoldSlideGesture({
   iconBounds,
 }: Args) {
   const armed = useSharedValue(false);
+  const hasRevealed = useSharedValue(false);
 
   function reset() {
     'worklet';
@@ -42,6 +44,7 @@ export function useHoldSlideGesture({
     phase.value = Phase.IDLE;
     activeIndex.value = -1;
     focusedIndex.value = -1;
+    hasRevealed.value = false;
     revealX.value = withTiming(0, { duration: 180 });
   }
 
@@ -55,6 +58,7 @@ export function useHoldSlideGesture({
       armed.value = true;
       phase.value = Phase.ARMED;
       activeIndex.value = tokenIndex;
+      runOnJS(triggerHaptic)('armed');
     });
 
   const pan = Gesture.Pan()
@@ -75,9 +79,15 @@ export function useHoldSlideGesture({
       revealX.value = clamp(dragged, 0, MENU_WIDTH);
 
       if (revealX.value > REVEAL_THRESHOLD) {
+        if (!hasRevealed.value) {
+          hasRevealed.value = true;
+          runOnJS(triggerHaptic)('reveal');
+        }
+
         const idx = hitTest(e.absoluteY, iconBounds.value, HIT_PADDING);
         if (idx !== focusedIndex.value) {
           focusedIndex.value = idx;
+          if (idx >= 0) runOnJS(triggerHaptic)('focusChange');
         }
         phase.value = Phase.SCRUBBING;
       } else {
@@ -88,6 +98,7 @@ export function useHoldSlideGesture({
     .onEnd(() => {
       if (phase.value === Phase.SCRUBBING && focusedIndex.value >= 0) {
         runOnJS(commitAction)(focusedIndex.value);
+        runOnJS(triggerHaptic)('commit');
       }
       reset();
     })
