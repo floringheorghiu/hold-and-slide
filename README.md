@@ -5,6 +5,10 @@ reading, instead of scrolling to a row of icons at the bottom of the screen.
 
 Built with Expo and React Native. Runs in Expo Go on iOS and Android.
 
+![Five phone screens showing the gesture in sequence: tap and hold a word; hold and slide left to reveal a three-icon drawer; hold and move down as focus tracks between icons; release to select; and playback running with the chosen sentence highlighted and a floating pause/stop control](docs/gesture-concept.png)
+
+<p align="center"><em>Tap &amp; hold → slide to reveal → move to choose → release to commit. Playback starts from the sentence you were holding.</em></p>
+
 ## The problem
 
 Chat apps put playback controls in a row of icons at the end of each answer.
