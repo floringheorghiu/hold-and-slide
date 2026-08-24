@@ -57,6 +57,15 @@ export function useHoldSlideGesture({
       phase.value = Phase.ARMED;
       activeIndex.value = tokenIndex;
       runOnJS(triggerHaptic)('armed');
+    })
+    .onFinalize(() => {
+      // onBegin optimistically sets PRESSING on every touch, including ones
+      // that turn into a scroll. When the long press never arms, pan's
+      // onFinalize is guarded by `armed` and never fires, so nothing clears
+      // the phase — it would stay PRESSING forever after the first scroll.
+      if (!armed.value) {
+        phase.value = Phase.IDLE;
+      }
     });
 
   const pan = Gesture.Pan()

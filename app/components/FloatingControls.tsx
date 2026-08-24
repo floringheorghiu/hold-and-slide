@@ -14,10 +14,12 @@ type Props = {
 // intercepting touches, then fades back once the gesture returns to IDLE.
 export function FloatingControls({ speech, phase }: Props) {
   const fadeStyle = useAnimatedStyle(() => {
-    // Any phase other than IDLE means a gesture is in progress somewhere on
-    // the article — this control has nothing to do with which token, only
-    // whether a gesture is active at all.
-    const hidden = phase.value !== Phase.IDLE;
+    // Yield only once the gesture has actually ARMED, not merely begun.
+    // PRESSING is ambiguous: every touch passes through it, including the
+    // start of an ordinary scroll. Hiding on PRESSING made the control
+    // vanish whenever the user scrolled. It yields to the drawer, and to
+    // nothing else.
+    const hidden = phase.value >= Phase.ARMED;
     return {
       opacity: withTiming(hidden ? 0 : 1, { duration: 140 }),
       // Plain style values set alongside animated ones update immediately,
