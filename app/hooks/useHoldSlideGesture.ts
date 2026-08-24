@@ -14,10 +14,6 @@ import {
   HIT_PADDING,
 } from '../lib/constants';
 
-function commitAction(index: number) {
-  console.log('[commit] icon', index);
-}
-
 type Args = {
   tokenIndex: number;
   activeIndex: SharedValue<number>;
@@ -25,6 +21,7 @@ type Args = {
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
   iconBounds: SharedValue<IconBounds[]>;
+  onCommit: (iconIndex: number, tokenIndex: number) => void;
 };
 
 export function useHoldSlideGesture({
@@ -34,6 +31,7 @@ export function useHoldSlideGesture({
   revealX,
   focusedIndex,
   iconBounds,
+  onCommit,
 }: Args) {
   const armed = useSharedValue(false);
   const hasRevealed = useSharedValue(false);
@@ -98,7 +96,7 @@ export function useHoldSlideGesture({
     })
     .onEnd(() => {
       if (phase.value === Phase.SCRUBBING && focusedIndex.value >= 0) {
-        runOnJS(commitAction)(focusedIndex.value);
+        runOnJS(onCommit)(focusedIndex.value, activeIndex.value);
         runOnJS(triggerHaptic)('commit');
       }
       reset();

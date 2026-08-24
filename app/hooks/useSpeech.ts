@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Speech from 'expo-speech';
+import { setAudioModeAsync } from 'expo-audio';
 import { splitSentences, sentenceIndexForOffset } from '../lib/sentences';
 
 export type SpeechState = 'idle' | 'playing' | 'paused';
@@ -82,6 +83,10 @@ export function useSpeech(fullText: string) {
   );
 
   useEffect(() => {
+    // iOS's speech audio category otherwise obeys the silent switch,
+    // regardless of volume, so playback would be silent with it flipped.
+    setAudioModeAsync({ playsInSilentMode: true });
+
     return () => {
       generation.current++;
       Speech.stop();

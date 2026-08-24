@@ -1,15 +1,19 @@
 import { GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { useSharedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform, Share, StyleSheet, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
 import { ReadingHeader } from './ReadingHeader';
 import { ActionRow } from './ActionRow';
 import { ReplyBar } from './ReplyBar';
 import { useHoldSlideGesture } from '../hooks/useHoldSlideGesture';
+import { useSpeech } from '../hooks/useSpeech';
 import { Phase } from '../lib/phase';
 import type { IconBounds } from '../lib/geometry';
+import { splitSentences, sentenceIndexForOffset, tokenOffsets } from '../lib/sentences';
 import { ARTICLE, ARTICLE_TITLE } from '../content/article';
 
 // Paragraphs split on blank lines. Every token keeps a unique index across
@@ -22,6 +26,8 @@ const PARAGRAPH_TOKENS = PARAGRAPHS.map((paragraph) =>
   paragraph.split(' ').map((text) => ({ text, index: nextIndex++ })),
 );
 
+const TOAST_DURATION_MS = 1500;
+
 function Token({
   text,
   index,
@@ -30,6 +36,7 @@ function Token({
   revealX,
   focusedIndex,
   iconBounds,
+  onCommit,
 }: {
   text: string;
   index: number;
@@ -38,6 +45,7 @@ function Token({
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
   iconBounds: SharedValue<IconBounds[]>;
+  onCommit: (iconIndex: number, tokenIndex: number) => void;
 }) {
   const { gesture } = useHoldSlideGesture({
     tokenIndex: index,
@@ -46,6 +54,7 @@ function Token({
     revealX,
     focusedIndex,
     iconBounds,
+    onCommit,
   });
 
   return (
@@ -64,6 +73,41 @@ export function ParagraphInteractive() {
   const focusedIndex = useSharedValue(-1);
   const iconBounds = useSharedValue<IconBounds[]>([]);
 
+  const speech = useSpeech(ARTICLE);
+  const offsets = useMemo(() => tokenOffsets(ARTICLE), []);
+  const sentences = useMemo(() => splitSentences(ARTICLE), []);
+
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
+  }
+
+  // The deliberate asymmetry: the bottom row (ActionRow) acts on the whole
+  // article. The drawer acts on the one sentence containing the held word.
+  const handleCommit = useCallback(
+    (iconIndex: number, tokenIndex: number) => {
+      if (tokenIndex < 0 || tokenIndex >= offsets.length) return;
+      const charOffset = offsets[tokenIndex];
+      const sentenceIndex = sentenceIndexForOffset(sentences, charOffset);
+      if (sentenceIndex < 0) return;
+      const sentence = sentences[sentenceIndex].text;
+
+      if (iconIndex === 0) {
+        speech.playFromOffset(charOffset);
+      } else if (iconIndex === 1) {
+        Clipboard.setStringAsync(sentence);
+        showToast('Sentence copied');
+      } else if (iconIndex === 2) {
+        Share.share({ message: sentence });
+      }
+    },
+    [offsets, sentences, speech],
+  );
+
   return (
     <View style={styles.wrap}>
       <ReadingHeader />
@@ -81,11 +125,12 @@ export function ParagraphInteractive() {
                 revealX={revealX}
                 focusedIndex={focusedIndex}
                 iconBounds={iconBounds}
+                onCommit={handleCommit}
               />
             ))}
           </View>
         ))}
-        <ActionRow />
+        <ActionRow speech={speech} />
         <Text style={styles.disclaimer}>
           Clara is AI and can make mistakes. Please double-check responses.
         </Text>
@@ -95,6 +140,11 @@ export function ParagraphInteractive() {
         focusedIndex={focusedIndex}
         onBounds={(b) => { iconBounds.value = b; }}
       />
+      {toast && (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
       <ReplyBar />
     </View>
   );
@@ -118,5 +168,18 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 16,
     marginBottom: 24,
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 84,
+    alignSelf: 'center',
+    backgroundColor: '#1F1E1D',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  toastText: {
+    color: '#FAF9F7',
+    fontSize: 13,
   },
 });

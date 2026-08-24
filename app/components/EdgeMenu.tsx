@@ -2,12 +2,15 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { useRef } from 'react';
+import { Feather } from '@expo/vector-icons';
 import { MENU_WIDTH, REVEAL_DISTANCE } from '../lib/constants';
 import type { IconBounds } from '../lib/geometry';
 
-const ICONS = ['★', '✎', '⌫'];
+// Order is meaningful: play-from-here, copy, share — matched to iconIndex
+// in ParagraphInteractive's commit handler.
+const ICONS = ['play', 'copy', 'share'] as const;
 
 type Props = {
   revealX: SharedValue<number>;
@@ -35,15 +38,15 @@ export function EdgeMenu({ revealX, focusedIndex, onBounds }: Props) {
 
   return (
     <Animated.View style={[styles.panel, panelStyle]} pointerEvents="none">
-      {ICONS.map((glyph, i) => (
-        <Icon key={i} glyph={glyph} index={i} focusedIndex={focusedIndex} onMeasured={report} />
+      {ICONS.map((name, i) => (
+        <Icon key={i} name={name} index={i} focusedIndex={focusedIndex} onMeasured={report} />
       ))}
     </Animated.View>
   );
 }
 
-function Icon({ glyph, index, focusedIndex, onMeasured }: {
-  glyph: string;
+function Icon({ name, index, focusedIndex, onMeasured }: {
+  name: React.ComponentProps<typeof Feather>['name'];
   index: number;
   focusedIndex: SharedValue<number>;
   onMeasured: (index: number, b: IconBounds) => void;
@@ -66,7 +69,7 @@ function Icon({ glyph, index, focusedIndex, onMeasured }: {
 
   return (
     <Animated.View ref={ref} style={[styles.icon, style]} onLayout={handleLayout}>
-      <Text style={styles.glyph}>{glyph}</Text>
+      <Feather name={name} size={22} color="#FFFFFF" />
     </Animated.View>
   );
 }
@@ -90,5 +93,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: { color: '#FFFFFF', fontSize: 22 },
 });

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useSpeech } from '../hooks/useSpeech';
+import type { useSpeech } from '../hooks/useSpeech';
 import { ARTICLE } from '../content/article';
 
 const DEFAULT_COLOR = '#8A8680';
@@ -12,10 +12,14 @@ const FLASH_DURATION_MS = 900;
 
 type MockKey = 'thumbs-up' | 'thumbs-down' | 'retry';
 
+type Props = {
+  speech: ReturnType<typeof useSpeech>;
+};
+
 // thumbs-up, thumbs-down, and retry are mocked: a momentary colour
 // acknowledgement and nothing else. No state, no storage.
-export function ActionRow() {
-  const { state, play, pause, resume, stop } = useSpeech(ARTICLE);
+export function ActionRow({ speech }: Props) {
+  const { state, play, pause, resume, stop } = speech;
   const [copied, setCopied] = useState(false);
   const [flashedKey, setFlashedKey] = useState<MockKey | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
