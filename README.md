@@ -103,6 +103,34 @@ to a character offset, map that to a sentence, set the cursor, play.
 Full results, including hardware tested and bugs that were invisible to the
 test suite, are in [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
+## A note on the Dependabot alerts
+
+GitHub reports seven advisories against this repository. All of them are in
+build tooling, and none are reachable in the running app.
+
+| Package | Reached through | Runs when |
+|---|---|---|
+| `image-size` | Metro bundler | Build time, on this repo's own icon assets |
+| `postcss` | `@expo/metro-config` | Web CSS processing |
+| `uuid` | `@expo/ngrok`, `xcode` config plugin | Dev tunnel and native build only |
+
+The `postcss` advisories require processing attacker-controlled CSS. This
+project has no CSS and no web build. The `image-size` advisories are
+denial-of-service through malformed images; the only images here are the
+icons committed alongside the code. Neither `uuid` path ships in the app
+bundle.
+
+Severity describes the vulnerability, not the exposure. The question that
+matters is whether attacker-controlled input can reach the affected code,
+and for all seven it cannot: every input is a file in this repository,
+processed on the developer's own machine at build time.
+
+They are also mostly unfixable from here. The two `image-size` advisories
+have no patch at all. `postcss` is pinned by `@expo/metro-config`, and
+`uuid` arrives at two major versions behind through two different tools.
+Forcing overrides would risk breaking the bundler to patch code that never
+executes. These clear when Expo updates its own toolchain.
+
 ## Running it
 
 Requires Expo Go on a physical device. Simulators cannot produce haptics, so
