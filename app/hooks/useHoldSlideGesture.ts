@@ -62,6 +62,7 @@ export function useHoldSlideGesture({
     });
 
   const pan = Gesture.Pan()
+    .activeOffsetX([-15, 15])
     .onUpdate((e) => {
       if (!armed.value) return;
 

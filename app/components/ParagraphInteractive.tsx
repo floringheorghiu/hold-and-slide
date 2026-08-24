@@ -1,9 +1,10 @@
-import { GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { useSharedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { StyleSheet, View } from 'react-native';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
+import { DebugOverlay } from './DebugOverlay';
 import { useHoldSlideGesture } from '../hooks/useHoldSlideGesture';
 import { Phase } from '../lib/phase';
 import type { IconBounds } from '../lib/geometry';
@@ -11,7 +12,10 @@ import type { IconBounds } from '../lib/geometry';
 const PARAGRAPH =
   'Hold any word in this paragraph, then slide left to reveal the menu and scrub through the icons.';
 
-const TOKENS = PARAGRAPH.split(' ');
+// Spike only: repeated so the content is clearly taller than the screen,
+// to test the pan gesture against a scrolling view.
+const REPEAT_COUNT = 8;
+const TOKENS = Array.from({ length: REPEAT_COUNT }, () => PARAGRAPH.split(' ')).flat();
 
 function Token({
   text,
@@ -57,20 +61,23 @@ export function ParagraphInteractive() {
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.paragraph}>
-        {TOKENS.map((t, i) => (
-          <Token
-            key={i}
-            text={t}
-            index={i}
-            activeIndex={activeIndex}
-            phase={phase}
-            revealX={revealX}
-            focusedIndex={focusedIndex}
-            iconBounds={iconBounds}
-          />
-        ))}
-      </View>
+      <DebugOverlay phase={phase} revealX={revealX} focusedIndex={focusedIndex} activeIndex={activeIndex} />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.paragraph}>
+          {TOKENS.map((t, i) => (
+            <Token
+              key={i}
+              text={t}
+              index={i}
+              activeIndex={activeIndex}
+              phase={phase}
+              revealX={revealX}
+              focusedIndex={focusedIndex}
+              iconBounds={iconBounds}
+            />
+          ))}
+        </View>
+      </ScrollView>
       <EdgeMenu
         revealX={revealX}
         focusedIndex={focusedIndex}
@@ -81,6 +88,7 @@ export function ParagraphInteractive() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, justifyContent: 'center' },
+  wrap: { flex: 1 },
+  scrollContent: { paddingTop: 80 },
   paragraph: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 24 },
 });
