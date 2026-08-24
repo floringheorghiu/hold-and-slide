@@ -1,12 +1,15 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import { ParagraphInteractive } from './app/components/ParagraphInteractive';
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <ParagraphInteractive />
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.root}>
+        <ParagraphInteractive />
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

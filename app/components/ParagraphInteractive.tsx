@@ -87,7 +87,7 @@ export function ParagraphInteractive() {
         ))}
         <ActionRow />
         <Text style={styles.disclaimer}>
-          Claude is AI and can make mistakes. Please double-check responses.
+          Clara is AI and can make mistakes. Please double-check responses.
         </Text>
       </ScrollView>
       <EdgeMenu

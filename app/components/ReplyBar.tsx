@@ -1,14 +1,16 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 // Non-functional. Set dressing to match the real app's composer bar.
 export function ReplyBar() {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
       <View style={styles.sideButton}>
         <Feather name="plus" size={18} color="#8A8680" />
       </View>
-      <Text style={styles.placeholder}>Reply to Claude</Text>
+      <Text style={styles.placeholder}>Reply to Clara</Text>
       <View style={styles.sideButton}>
         <Feather name="mic" size={18} color="#8A8680" />
       </View>

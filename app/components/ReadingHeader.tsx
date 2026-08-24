@@ -1,14 +1,16 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 export function ReadingHeader() {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { paddingTop: insets.top + 12 }]}>
       <View style={styles.iconButton}>
         <Feather name="menu" size={20} color="#1F1E1D" />
       </View>
       <View style={styles.chip}>
-        <Text style={styles.chipText}>Salient Digest</Text>
+        <Text style={styles.chipText}>Side Menu</Text>
       </View>
       <View style={styles.iconButton}>
         <Feather name="plus" size={20} color="#1F1E1D" />
