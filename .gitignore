@@ -47,3 +47,6 @@ yarn-error.*
 # Personal working notes and recordings, not part of the published PoC
 /notes/
 .DS_Store
+
+# Personal agent config and skills, not part of the project
+.claude/
