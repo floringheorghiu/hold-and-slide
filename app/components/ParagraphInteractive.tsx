@@ -14,6 +14,7 @@ import { useSpeech } from '../hooks/useSpeech';
 import { Phase } from '../lib/phase';
 import type { IconBounds } from '../lib/geometry';
 import { splitSentences, sentenceIndexForOffset, tokenOffsets } from '../lib/sentences';
+import { getDrawerSlots } from '../lib/drawerSlots';
 import { ARTICLE, ARTICLE_TITLE } from '../content/article';
 
 // Paragraphs split on blank lines. Every token keeps a unique index across
@@ -88,6 +89,11 @@ export function ParagraphInteractive() {
 
   // The deliberate asymmetry: the bottom row (ActionRow) acts on the whole
   // article. The drawer acts on the one sentence containing the held word.
+  //
+  // The icon list is variable now (3 slots idle, 4 while playing/paused), so
+  // iconIndex no longer has a fixed meaning. Dispatch indexes into the SAME
+  // getDrawerSlots(state) array EdgeMenu renders from, rather than a second
+  // switch statement that would have to be kept in sync by hand.
   const handleCommit = useCallback(
     (iconIndex: number, tokenIndex: number) => {
       if (tokenIndex < 0 || tokenIndex >= offsets.length) return;
@@ -96,13 +102,26 @@ export function ParagraphInteractive() {
       if (sentenceIndex < 0) return;
       const sentence = sentences[sentenceIndex].text;
 
-      if (iconIndex === 0) {
-        speech.playFromOffset(charOffset);
-      } else if (iconIndex === 1) {
-        Clipboard.setStringAsync(sentence);
-        showToast('Sentence copied');
-      } else if (iconIndex === 2) {
-        Share.share({ message: sentence });
+      const slot = getDrawerSlots(speech.state)[iconIndex];
+      if (!slot) return;
+
+      switch (slot.kind) {
+        case 'playFromHere':
+          speech.playFromOffset(charOffset);
+          break;
+        case 'pause':
+          speech.pause();
+          break;
+        case 'stop':
+          speech.stop();
+          break;
+        case 'copy':
+          Clipboard.setStringAsync(sentence);
+          showToast('Sentence copied');
+          break;
+        case 'share':
+          Share.share({ message: sentence });
+          break;
       }
     },
     [offsets, sentences, speech],
@@ -138,6 +157,7 @@ export function ParagraphInteractive() {
       <EdgeMenu
         revealX={revealX}
         focusedIndex={focusedIndex}
+        speechState={speech.state}
         onBounds={(b) => { iconBounds.value = b; }}
       />
       {toast && (

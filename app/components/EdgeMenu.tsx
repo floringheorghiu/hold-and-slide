@@ -7,18 +7,17 @@ import { useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { MENU_WIDTH, REVEAL_DISTANCE } from '../lib/constants';
 import type { IconBounds } from '../lib/geometry';
-
-// Order is meaningful: play-from-here, copy, share — matched to iconIndex
-// in ParagraphInteractive's commit handler.
-const ICONS = ['play', 'copy', 'share'] as const;
+import { getDrawerSlots, DrawerSpeechState } from '../lib/drawerSlots';
 
 type Props = {
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
+  speechState: DrawerSpeechState;
   onBounds: (b: IconBounds[]) => void;
 };
 
-export function EdgeMenu({ revealX, focusedIndex, onBounds }: Props) {
+export function EdgeMenu({ revealX, focusedIndex, speechState, onBounds }: Props) {
+  const slots = getDrawerSlots(speechState);
   const collected = useRef<IconBounds[]>([]);
 
   const panelStyle = useAnimatedStyle(() => {
@@ -31,15 +30,23 @@ export function EdgeMenu({ revealX, focusedIndex, onBounds }: Props) {
 
   function report(index: number, b: IconBounds) {
     collected.current[index] = b;
-    if (collected.current.filter(Boolean).length === ICONS.length) {
-      onBounds([...collected.current]);
+    // Slice to the CURRENT slot count before checking readiness. The icon
+    // count changes at runtime (3 icons idle, 4 while playing/paused), and
+    // `collected` is a ref that persists across that change. Without this
+    // slice, a stale bounds entry left over from a longer previous list
+    // would survive here, hit-testing would target an icon that no longer
+    // exists on screen, and this length check would never again equal the
+    // new (shorter) slot count, freezing `onBounds` on stale data forever.
+    const relevant = collected.current.slice(0, slots.length);
+    if (relevant.filter(Boolean).length === slots.length) {
+      onBounds(relevant);
     }
   }
 
   return (
     <Animated.View style={[styles.panel, panelStyle]} pointerEvents="none">
-      {ICONS.map((name, i) => (
-        <Icon key={i} name={name} index={i} focusedIndex={focusedIndex} onMeasured={report} />
+      {slots.map((slot, i) => (
+        <Icon key={i} name={slot.icon} index={i} focusedIndex={focusedIndex} onMeasured={report} />
       ))}
     </Animated.View>
   );
