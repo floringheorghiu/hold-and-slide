@@ -6,6 +6,7 @@ import { Platform, Share, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
+import { FloatingControls } from './FloatingControls';
 import { ReadingHeader } from './ReadingHeader';
 import { ActionRow } from './ActionRow';
 import { ReplyBar } from './ReplyBar';
@@ -154,6 +155,7 @@ export function ParagraphInteractive() {
           Clara is AI and can make mistakes. Please double-check responses.
         </Text>
       </ScrollView>
+      <FloatingControls speech={speech} phase={phase} />
       <EdgeMenu
         revealX={revealX}
         focusedIndex={focusedIndex}
