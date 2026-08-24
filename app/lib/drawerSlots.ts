@@ -2,35 +2,19 @@
 // to render, and ParagraphInteractive's commit handler uses the SAME
 // derivation to dispatch — so the two can never fall out of sync on which
 // slot index means what.
+//
+// Fixed at three passage-scoped actions, in every playback state. The
+// floating pill owns pause and stop persistently, so the drawer does not
+// need to duplicate them — two clean roles instead of one overloaded one.
 
-export type DrawerSpeechState = 'idle' | 'playing' | 'paused';
-
-export type DrawerSlotKind = 'playFromHere' | 'pause' | 'stop' | 'copy' | 'share';
+export type DrawerSlotKind = 'playFromHere' | 'copy' | 'share';
 
 export type DrawerSlot = {
   kind: DrawerSlotKind;
-  icon: 'play' | 'pause' | 'square' | 'copy' | 'share';
+  icon: 'play' | 'copy' | 'share';
 };
 
-export function getDrawerSlots(state: DrawerSpeechState): DrawerSlot[] {
-  if (state === 'playing') {
-    return [
-      { kind: 'pause', icon: 'pause' },
-      { kind: 'stop', icon: 'square' },
-      { kind: 'copy', icon: 'copy' },
-      { kind: 'share', icon: 'share' },
-    ];
-  }
-
-  if (state === 'paused') {
-    return [
-      { kind: 'playFromHere', icon: 'play' },
-      { kind: 'stop', icon: 'square' },
-      { kind: 'copy', icon: 'copy' },
-      { kind: 'share', icon: 'share' },
-    ];
-  }
-
+export function getDrawerSlots(): DrawerSlot[] {
   return [
     { kind: 'playFromHere', icon: 'play' },
     { kind: 'copy', icon: 'copy' },

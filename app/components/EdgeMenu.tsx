@@ -7,17 +7,16 @@ import { useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { MENU_WIDTH, REVEAL_DISTANCE } from '../lib/constants';
 import type { IconBounds } from '../lib/geometry';
-import { getDrawerSlots, DrawerSpeechState } from '../lib/drawerSlots';
+import { getDrawerSlots } from '../lib/drawerSlots';
 
 type Props = {
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
-  speechState: DrawerSpeechState;
   onBounds: (b: IconBounds[]) => void;
 };
 
-export function EdgeMenu({ revealX, focusedIndex, speechState, onBounds }: Props) {
-  const slots = getDrawerSlots(speechState);
+export function EdgeMenu({ revealX, focusedIndex, onBounds }: Props) {
+  const slots = getDrawerSlots();
   const collected = useRef<IconBounds[]>([]);
 
   const panelStyle = useAnimatedStyle(() => {
