@@ -52,7 +52,10 @@ export function GestureToken({ text, index, sentenceIndex, activeIndex, readingS
 }
 
 const styles = StyleSheet.create({
-  token: { borderRadius: 4, paddingHorizontal: 2 },
+  // No borderRadius: rounded corners on adjacent tokens leave visible gaps
+  // between the words of a highlighted sentence, which reads as distracting
+  // speckling rather than one continuous band.
+  token: { paddingHorizontal: 2 },
   text: {
     color: '#1F1E1D',
     fontSize: 18,
