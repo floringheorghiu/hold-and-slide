@@ -1,8 +1,9 @@
 import { GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import { useSharedValue } from 'react-native-reanimated';
+import { useAnimatedReaction, useSharedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-worklets';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
@@ -15,6 +16,7 @@ import { useSpeech } from '../hooks/useSpeech';
 import { Phase } from '../lib/phase';
 import type { IconBounds } from '../lib/geometry';
 import { splitSentences, sentenceIndexForOffset, tokenOffsets } from '../lib/sentences';
+import { tokenSentenceIndices } from '../lib/tokenSentences';
 import { getDrawerSlots } from '../lib/drawerSlots';
 import { ARTICLE, ARTICLE_TITLE } from '../content/article';
 
@@ -28,25 +30,39 @@ const PARAGRAPH_TOKENS = PARAGRAPHS.map((paragraph) =>
   paragraph.split(' ').map((text) => ({ text, index: nextIndex++ })),
 );
 
+// Token index -> paragraph index, built from the same ranges as
+// PARAGRAPH_TOKENS above so it can never disagree with what actually renders.
+const TOKEN_PARAGRAPH: number[] = [];
+PARAGRAPH_TOKENS.forEach((tokens, pIndex) => {
+  tokens.forEach(() => TOKEN_PARAGRAPH.push(pIndex));
+});
+
 const TOAST_DURATION_MS = 1500;
+// How far below the header's bottom edge a paragraph's first line should
+// land once scrolled into view.
+const SCROLL_OFFSET = 20;
 
 function Token({
   text,
   index,
+  sentenceIndex,
   activeIndex,
   phase,
   revealX,
   focusedIndex,
   iconBounds,
+  readingSentence,
   onCommit,
 }: {
   text: string;
   index: number;
+  sentenceIndex: number;
   activeIndex: SharedValue<number>;
   phase: SharedValue<number>;
   revealX: SharedValue<number>;
   focusedIndex: SharedValue<number>;
   iconBounds: SharedValue<IconBounds[]>;
+  readingSentence: SharedValue<number>;
   onCommit: (iconIndex: number, tokenIndex: number) => void;
 }) {
   const { gesture } = useHoldSlideGesture({
@@ -62,7 +78,13 @@ function Token({
   return (
     <GestureDetector gesture={gesture}>
       <View>
-        <GestureToken text={text} index={index} activeIndex={activeIndex} />
+        <GestureToken
+          text={text}
+          index={index}
+          sentenceIndex={sentenceIndex}
+          activeIndex={activeIndex}
+          readingSentence={readingSentence}
+        />
       </View>
     </GestureDetector>
   );
@@ -78,6 +100,26 @@ export function ParagraphInteractive() {
   const speech = useSpeech(ARTICLE);
   const offsets = useMemo(() => tokenOffsets(ARTICLE), []);
   const sentences = useMemo(() => splitSentences(ARTICLE), []);
+  const tokenSentences = useMemo(() => tokenSentenceIndices(ARTICLE), []);
+
+  // For each sentence, the paragraph containing its first token — derived
+  // from the same token->sentence and token->paragraph data everything else
+  // uses, not a separate hand-maintained mapping.
+  const sentenceToParagraph = useMemo(() => {
+    const map: number[] = [];
+    for (let t = 0; t < tokenSentences.length; t++) {
+      const s = tokenSentences[t];
+      if (s >= 0 && map[s] === undefined) {
+        map[s] = TOKEN_PARAGRAPH[t];
+      }
+    }
+    return map;
+  }, [tokenSentences]);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const paragraphY = useRef<number[]>([]);
+  const headerHeight = useRef(0);
+  const lastScrolledParagraph = useRef(-1);
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,6 +129,50 @@ export function ParagraphInteractive() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
   }
+
+  function handleHeaderLayout(e: LayoutChangeEvent) {
+    headerHeight.current = e.nativeEvent.layout.height;
+  }
+
+  function handleParagraphLayout(pIndex: number, e: LayoutChangeEvent) {
+    paragraphY.current[pIndex] = e.nativeEvent.layout.y;
+  }
+
+  // The header is a fixed sibling directly above the ScrollView, not part of
+  // its scrollable content, so the ScrollView's own viewport top already
+  // coincides on screen with the header's bottom edge. Scrolling this
+  // paragraph 20px below the header is therefore the same target as
+  // scrolling it 20px below the ScrollView's own top: contentY - 20.
+  // headerHeight is captured (not hardcoded, since it varies with each
+  // device's safe-area inset) but does not appear in this formula — it
+  // cancels out because nothing sits between the header and the ScrollView.
+  const scrollToSentence = useCallback(
+    (sentenceIndex: number) => {
+      const pIndex = sentenceToParagraph[sentenceIndex];
+      if (pIndex === undefined || pIndex === lastScrolledParagraph.current) return;
+
+      const y = paragraphY.current[pIndex];
+      if (y === undefined) return;
+
+      lastScrolledParagraph.current = pIndex;
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - SCROLL_OFFSET), animated: true });
+    },
+    [sentenceToParagraph],
+  );
+
+  // Fires only on a discrete sentence change, never per frame, and never
+  // re-renders the ~700-token tree — the same discipline as the gesture
+  // haptics. Scrolling only happens when the PARAGRAPH changes inside
+  // scrollToSentence's own guard, so a run of sentences within one
+  // paragraph triggers this reaction repeatedly but scrolls nothing.
+  useAnimatedReaction(
+    () => speech.readingSentence.value,
+    (current, previous) => {
+      if (current !== previous && current >= 0) {
+        runOnJS(scrollToSentence)(current);
+      }
+    },
+  );
 
   // The deliberate asymmetry: the bottom row (ActionRow) acts on the whole
   // article. The drawer acts on the one sentence containing the held word.
@@ -130,21 +216,29 @@ export function ParagraphInteractive() {
 
   return (
     <View style={styles.wrap}>
-      <ReadingHeader />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View onLayout={handleHeaderLayout}>
+        <ReadingHeader />
+      </View>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>{ARTICLE_TITLE}</Text>
         {PARAGRAPH_TOKENS.map((tokens, pIndex) => (
-          <View key={pIndex} style={styles.paragraph}>
+          <View
+            key={pIndex}
+            style={styles.paragraph}
+            onLayout={(e) => handleParagraphLayout(pIndex, e)}
+          >
             {tokens.map(({ text, index }) => (
               <Token
                 key={index}
                 text={text}
                 index={index}
+                sentenceIndex={tokenSentences[index] ?? -1}
                 activeIndex={activeIndex}
                 phase={phase}
                 revealX={revealX}
                 focusedIndex={focusedIndex}
                 iconBounds={iconBounds}
+                readingSentence={speech.readingSentence}
                 onCommit={handleCommit}
               />
             ))}

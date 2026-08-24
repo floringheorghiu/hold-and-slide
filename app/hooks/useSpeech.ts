@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSharedValue } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import { setAudioModeAsync } from 'expo-audio';
 import { splitSentences, sentenceIndexForOffset } from '../lib/sentences';
@@ -9,6 +10,13 @@ export function useSpeech(fullText: string) {
   const sentences = useMemo(() => splitSentences(fullText), [fullText]);
   const [state, setState] = useState<SpeechState>('idle');
   const cursor = useRef(0);
+  // Which sentence is currently being spoken, or -1 when there is none to
+  // show. A shared value, not React state: ~700 tokens read this inside
+  // their own useAnimatedStyle, and a sentence changes up to 48 times per
+  // article — React state here would re-render the whole tree that often.
+  // Not cleared on pause(): a paused reader still wants to see where they
+  // stopped.
+  const readingSentence = useSharedValue(-1);
   // Guards against expo-speech's Android quirk: Speech.stop() can itself
   // trigger onDone rather than onStopped. Without this, pausing would
   // immediately start speaking the next sentence — the opposite of pausing.
@@ -25,11 +33,13 @@ export function useSpeech(fullText: string) {
     (index: number) => {
       if (index < 0 || index >= sentences.length) {
         cursor.current = 0;
+        readingSentence.value = -1;
         setState('idle');
         return;
       }
 
       cursor.current = index;
+      readingSentence.value = index;
       const myGeneration = ++generation.current;
       setState('playing');
 
@@ -70,6 +80,7 @@ export function useSpeech(fullText: string) {
     generation.current++;
     Speech.stop();
     cursor.current = 0;
+    readingSentence.value = -1;
     setState('idle');
   }, []);
 
@@ -93,5 +104,5 @@ export function useSpeech(fullText: string) {
     };
   }, []);
 
-  return { state, play, pause, resume, stop, playFromOffset };
+  return { state, play, pause, resume, stop, playFromOffset, readingSentence };
 }
