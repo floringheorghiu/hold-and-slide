@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { TapFeedback } from './TapFeedback';
@@ -19,7 +20,18 @@ const HALO_ALPHA = 0.55;
 // Persistent playback control, visible only while audio is active. Yields to
 // the drawer during the hold-and-slide gesture: fades out and stops
 // intercepting touches, then fades back once the gesture returns to IDLE.
+// Halved from the previous ~42px gap.
+const GAP_ABOVE_REPLY_BAR = 21;
+
 export function FloatingControls({ speech, phase }: Props) {
+  const insets = useSafeAreaInsets();
+  // The reply bar's own stack height: marginBottom 16 + paddingTop 8 +
+  // content 32 + paddingBottom (inset + 8). Deriving the pill's offset from
+  // it keeps the visual gap identical across devices, where a fixed `bottom`
+  // varied with each device's home-indicator inset.
+  const replyBarStack = 64 + Math.max(insets.bottom, 8);
+  const bottom = replyBarStack + GAP_ABOVE_REPLY_BAR;
+
   const fadeStyle = useAnimatedStyle(() => {
     // Yield only once the gesture has actually ARMED, not merely begun.
     // PRESSING is ambiguous: every touch passes through it, including the
@@ -43,7 +55,7 @@ export function FloatingControls({ speech, phase }: Props) {
   const isPlaying = speech.state === 'playing';
 
   return (
-    <View style={styles.wrap} pointerEvents="box-none">
+    <View style={[styles.wrap, { bottom }]} pointerEvents="box-none">
       <Animated.View style={[styles.pill, fadeStyle]}>
         <TapFeedback
           style={styles.button}
@@ -66,7 +78,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 140,
     alignItems: 'center',
   },
   pill: {
