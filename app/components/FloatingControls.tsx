@@ -90,6 +90,14 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingHorizontal: 8,
     paddingVertical: 8,
+    // Lifts the pill off the article it floats over. iOS reads the shadow*
+    // properties; Android ignores them entirely and needs elevation, so both
+    // are set. Kept low so it reads as depth rather than as a drop shadow.
+    shadowColor: '#1F1E1D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   button: {
     width: 44,
