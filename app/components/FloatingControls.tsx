@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
+import { TapFeedback } from './TapFeedback';
 import type { useSpeech } from '../hooks/useSpeech';
 import { Phase } from '../lib/phase';
 
@@ -8,6 +9,12 @@ type Props = {
   speech: ReturnType<typeof useSpeech>;
   phase: SharedValue<number>;
 };
+
+// The dark #1F1E1D circles need a stronger halo than ActionRow's light
+// chrome — the same #DE7356 alpha-blended onto near-black comes out much
+// darker and less distinct than the same blend onto near-white. See
+// TapFeedback.
+const HALO_ALPHA = 0.55;
 
 // Persistent playback control, visible only while audio is active. Yields to
 // the drawer during the hold-and-slide gesture: fades out and stops
@@ -38,16 +45,17 @@ export function FloatingControls({ speech, phase }: Props) {
   return (
     <View style={styles.wrap} pointerEvents="box-none">
       <Animated.View style={[styles.pill, fadeStyle]}>
-        <Pressable
+        <TapFeedback
           style={styles.button}
           hitSlop={8}
           onPress={isPlaying ? speech.pause : speech.resume}
+          haloPeakAlpha={HALO_ALPHA}
         >
           <Feather name={isPlaying ? 'pause' : 'play'} size={20} color="#FFFFFF" />
-        </Pressable>
-        <Pressable style={styles.button} hitSlop={8} onPress={speech.stop}>
+        </TapFeedback>
+        <TapFeedback style={styles.button} hitSlop={8} onPress={speech.stop} haloPeakAlpha={HALO_ALPHA}>
           <Feather name="square" size={20} color="#FFFFFF" />
-        </Pressable>
+        </TapFeedback>
       </Animated.View>
     </View>
   );

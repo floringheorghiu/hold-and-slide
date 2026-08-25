@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { Share, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { TapFeedback } from './TapFeedback';
 import type { useSpeech } from '../hooks/useSpeech';
 import { ARTICLE } from '../content/article';
 
@@ -9,6 +10,9 @@ const DEFAULT_COLOR = '#8A8680';
 const FLASH_COLOR = '#DE7356';
 const COPIED_DURATION_MS = 1500;
 const FLASH_DURATION_MS = 900;
+// ActionRow sits on the light #FAF9F7 chrome, where the #DE7356 halo reads
+// clearly even at a modest alpha — see TapFeedback.
+const HALO_ALPHA = 0.35;
 
 type MockKey = 'thumbs-up' | 'thumbs-down' | 'retry';
 
@@ -64,45 +68,60 @@ export function ActionRow({ speech }: Props) {
 
   return (
     <View style={styles.row}>
-      <Pressable style={styles.button} hitSlop={8} onPress={handleCopy}>
+      <TapFeedback style={styles.button} hitSlop={8} onPress={handleCopy} haloPeakAlpha={HALO_ALPHA}>
         <Feather
           name={copied ? 'check' : 'copy'}
           size={20}
           color={copied ? FLASH_COLOR : DEFAULT_COLOR}
         />
-      </Pressable>
-      <Pressable style={styles.button} hitSlop={8} onPress={handleShare}>
+      </TapFeedback>
+      <TapFeedback style={styles.button} hitSlop={8} onPress={handleShare} haloPeakAlpha={HALO_ALPHA}>
         <Feather name="share" size={20} color={DEFAULT_COLOR} />
-      </Pressable>
-      <Pressable style={styles.button} hitSlop={8} onPress={handlePlayPause}>
+      </TapFeedback>
+      <TapFeedback style={styles.button} hitSlop={8} onPress={handlePlayPause} haloPeakAlpha={HALO_ALPHA}>
         <Feather name={playPauseIcon} size={20} color={DEFAULT_COLOR} />
-      </Pressable>
+      </TapFeedback>
       {showStop && (
-        <Pressable style={styles.button} hitSlop={8} onPress={stop}>
+        <TapFeedback style={styles.button} hitSlop={8} onPress={stop} haloPeakAlpha={HALO_ALPHA}>
           <Feather name="square" size={20} color={DEFAULT_COLOR} />
-        </Pressable>
+        </TapFeedback>
       )}
-      <Pressable style={styles.button} hitSlop={8} onPress={() => handleMock('thumbs-up')}>
+      <TapFeedback
+        style={styles.button}
+        hitSlop={8}
+        onPress={() => handleMock('thumbs-up')}
+        haloPeakAlpha={HALO_ALPHA}
+      >
         <Feather
           name="thumbs-up"
           size={20}
           color={flashedKey === 'thumbs-up' ? FLASH_COLOR : DEFAULT_COLOR}
         />
-      </Pressable>
-      <Pressable style={styles.button} hitSlop={8} onPress={() => handleMock('thumbs-down')}>
+      </TapFeedback>
+      <TapFeedback
+        style={styles.button}
+        hitSlop={8}
+        onPress={() => handleMock('thumbs-down')}
+        haloPeakAlpha={HALO_ALPHA}
+      >
         <Feather
           name="thumbs-down"
           size={20}
           color={flashedKey === 'thumbs-down' ? FLASH_COLOR : DEFAULT_COLOR}
         />
-      </Pressable>
-      <Pressable style={styles.button} hitSlop={8} onPress={() => handleMock('retry')}>
+      </TapFeedback>
+      <TapFeedback
+        style={styles.button}
+        hitSlop={8}
+        onPress={() => handleMock('retry')}
+        haloPeakAlpha={HALO_ALPHA}
+      >
         <Feather
           name="rotate-cw"
           size={20}
           color={flashedKey === 'retry' ? FLASH_COLOR : DEFAULT_COLOR}
         />
-      </Pressable>
+      </TapFeedback>
     </View>
   );
 }
