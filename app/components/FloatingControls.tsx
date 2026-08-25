@@ -15,7 +15,11 @@ type Props = {
 // chrome — the same #DE7356 alpha-blended onto near-black comes out much
 // darker and less distinct than the same blend onto near-white. See
 // TapFeedback.
-const HALO_ALPHA = 0.55;
+// Full alpha, not a wash: the halo covers the whole button, so at 1 the dark
+// circle reads as a solid colour swap to the accent rather than a tint over
+// it. Chosen for screen-recording legibility, and it matches the drawer,
+// where #DE7356 already means "this one is active".
+const HALO_ALPHA = 1;
 
 // Persistent playback control, visible only while audio is active. Yields to
 // the drawer during the hold-and-slide gesture: fades out and stops
