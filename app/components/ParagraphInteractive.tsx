@@ -5,6 +5,7 @@ import { runOnJS } from 'react-native-worklets';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { LayoutChangeEvent, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useOverlayLayout } from '../hooks/useOverlayLayout';
 import * as Clipboard from 'expo-clipboard';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
@@ -118,6 +119,7 @@ export function ParagraphInteractive() {
   }, [tokenSentences]);
 
   const insets = useSafeAreaInsets();
+  const overlay = useOverlayLayout();
 
   const scrollRef = useRef<ScrollView>(null);
   const paragraphY = useRef<number[]>([]);
@@ -281,7 +283,7 @@ export function ParagraphInteractive() {
         onBounds={(b) => { iconBounds.value = b; }}
       />
       {toast && (
-        <View style={styles.toast} pointerEvents="none">
+        <View style={[styles.toast, { bottom: overlay.bottom, left: overlay.left }]} pointerEvents="none">
           <Text style={styles.toastText}>{toast}</Text>
         </View>
       )}
@@ -314,9 +316,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   toast: {
+    // Same row as the transport pill, flush with the reply bar's left edge.
+    // Vertical offset comes from useOverlayLayout so the two cannot drift.
     position: 'absolute',
-    bottom: 84,
-    alignSelf: 'center',
     backgroundColor: '#1F1E1D',
     paddingHorizontal: 14,
     paddingVertical: 8,
