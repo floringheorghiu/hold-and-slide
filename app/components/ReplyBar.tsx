@@ -6,7 +6,16 @@ import { Feather } from '@expo/vector-icons';
 export function ReplyBar() {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
+    <View
+      style={[
+        styles.bar,
+        {
+          paddingBottom: Math.max(insets.bottom, 8) + 8,
+          marginLeft: Math.max(16, insets.left),
+          marginRight: Math.max(16, insets.right),
+        },
+      ]}
+    >
       <View style={styles.sideButton}>
         <Feather name="plus" size={18} color="#8A8680" />
       </View>
@@ -22,7 +31,6 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
     marginBottom: 16,
     paddingHorizontal: 8,
     paddingVertical: 8,

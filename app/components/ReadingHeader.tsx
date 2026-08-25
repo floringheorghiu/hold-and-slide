@@ -5,7 +5,16 @@ import { Feather } from '@expo/vector-icons';
 export function ReadingHeader() {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.row, { paddingTop: insets.top + 12 }]}>
+    <View
+      style={[
+        styles.row,
+        {
+          paddingTop: insets.top + 12,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
+        },
+      ]}
+    >
       <View style={styles.iconButton}>
         <Feather name="menu" size={20} color="#1F1E1D" />
       </View>
@@ -24,7 +33,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FAF9F7',
   },

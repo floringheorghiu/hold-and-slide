@@ -4,6 +4,7 @@ import type { SharedValue } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-worklets';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { LayoutChangeEvent, Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { GestureToken } from './GestureToken';
 import { EdgeMenu } from './EdgeMenu';
@@ -116,10 +117,13 @@ export function ParagraphInteractive() {
     return map;
   }, [tokenSentences]);
 
+  const insets = useSafeAreaInsets();
+
   const scrollRef = useRef<ScrollView>(null);
   const paragraphY = useRef<number[]>([]);
   const headerHeight = useRef(0);
   const lastScrolledParagraph = useRef(-1);
+  const scrollViewWidth = useRef<number | null>(null);
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,6 +140,20 @@ export function ParagraphInteractive() {
 
   function handleParagraphLayout(pIndex: number, e: LayoutChangeEvent) {
     paragraphY.current[pIndex] = e.nativeEvent.layout.y;
+  }
+
+  // paragraphY re-measures on rotation because onLayout fires again, but
+  // lastScrolledParagraph does not know its old value is now stale, so the
+  // paragraph being read would not re-centre after a rotation. A width
+  // change is the thing that actually matters — it also covers split-screen
+  // and foldables, not just a 90-degree rotation — so reset on that rather
+  // than listening for orientation specifically.
+  function handleScrollViewLayout(e: LayoutChangeEvent) {
+    const width = e.nativeEvent.layout.width;
+    if (scrollViewWidth.current !== null && scrollViewWidth.current !== width) {
+      lastScrolledParagraph.current = -1;
+    }
+    scrollViewWidth.current = width;
   }
 
   // The header is a fixed sibling directly above the ScrollView, not part of
@@ -219,7 +237,14 @@ export function ParagraphInteractive() {
       <View onLayout={handleHeaderLayout}>
         <ReadingHeader />
       </View>
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        ref={scrollRef}
+        onLayout={handleScrollViewLayout}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingLeft: Math.max(24, insets.left), paddingRight: Math.max(24, insets.right) },
+        ]}
+      >
         <Text style={styles.title}>{ARTICLE_TITLE}</Text>
         {PARAGRAPH_TOKENS.map((tokens, pIndex) => (
           <View
@@ -267,7 +292,11 @@ export function ParagraphInteractive() {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: '#FAF9F7' },
-  scrollContent: { paddingHorizontal: 24, paddingBottom: 12 },
+  // maxWidth/alignSelf apply to this content container only — the article
+  // column. The ScrollView itself still fills the screen; the header, reply
+  // bar, edge drawer, and floating controls are chrome and stay full-width
+  // or edge-anchored, not wrapped in this constraint.
+  scrollContent: { paddingBottom: 12, maxWidth: 600, alignSelf: 'center' },
   title: {
     color: '#1F1E1D',
     fontSize: 24,
